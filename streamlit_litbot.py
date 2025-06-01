@@ -82,7 +82,11 @@ def get_bot_response(user_input):
     follow_up = random.choice(seed_questions)
     return f"{user_name}, 너의 생각이 흥미로워. 나는 조금 다르게 느꼈는데, {follow_up}"
 
-elapsed = (datetime.datetime.now() - st.session_state.start_time).total_seconds() if st.session_state.start_time else 0
+if st.session_state.start_time:
+    elapsed = (datetime.datetime.now() - st.session_state.start_time).total_seconds()
+else:
+    elapsed = 0
+
 if elapsed > 10 and not st.session_state.chat_log_sent:
     st.warning("⏰ 테스트용 타이머 종료! 대화 시간이 종료되었어요.")
     st.session_state.chat_ended = True
