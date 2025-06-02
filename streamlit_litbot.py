@@ -16,9 +16,7 @@ def get_claude_response(user_input, system_prompt):
         "model": "claude-3-sonnet-20240229",
         "max_tokens": 768,
         "system": system_prompt,
-        "messages": [
-            {"role": "user", "content": user_input}
-        ]
+        "messages": [{"role": "user", "content": user_input}]
     }
     res = requests.post("https://api.anthropic.com/v1/messages", headers=headers, json=data)
     if res.status_code == 200:
@@ -65,7 +63,7 @@ if uploaded_review and "review_sent" not in st.session_state:
     st.session_state.file_content = file_content
     st.success("감상문을 성공적으로 전송했어요!")
 
-# ✅ 대화 상태 초기화
+# ✅ 상태 초기화
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "start_time" not in st.session_state:
@@ -77,27 +75,23 @@ if "last_question_flag" not in st.session_state:
 if "final_prompt_mode" not in st.session_state:
     st.session_state.final_prompt_mode = False
 
-# ✅ 첫인사
+# ✅ 첫인사 (감상문 업로드 후)
 if uploaded_review and not st.session_state.start_time:
     st.session_state.start_time = time.time()
     st.session_state.messages.append({
         "role": "assistant",
-        "content": f"안녕, 난 리토야. 우리 아까 읽은 소설 <나, 나, 마들렌>에 대해 함께 이야기해볼까? 네가 적은 감상문을 나에게 보내줘!"
+        "content": f"안녕, {user_name}! 감상문 잘 읽었어. 같이 <나, 나, 마들렌> 이야기 나눠볼까?"
     })
 
-# ✅ 시간 경과 확인
+# ✅ 타이머에 따라 상태 업데이트
 if st.session_state.start_time:
     elapsed_time = time.time() - st.session_state.start_time
-
-    # 8분 이후 마지막 질문 유도 플래그 활성화
     if elapsed_time > 480 and not st.session_state.last_question_flag:
         st.session_state.last_question_flag = True
-
-    # 10분 이후 대화 종료
     if elapsed_time > 600 and not st.session_state.final_prompt_mode:
         st.session_state.final_prompt_mode = True
 
-# ✅ 메시지 출력
+# ✅ 대화 출력
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
@@ -109,13 +103,12 @@ if not st.session_state.chat_disabled and uploaded_review:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Claude 프롬프트 구성
+        # Claude 시스템 프롬프트 구성
         if st.session_state.final_prompt_mode:
-            # 마무리 응답
             system_prompt = f"""
 지금은 {user_name}과의 마지막 대화 시간이야.
-방금 질문은 마지막이니까, 너의 생각을 정리해서 부드럽게 대답해줘.
-친구처럼 고맙다는 느낌도 전하고, 이번 대화를 함께해줘서 반가웠다는 식으로 마무리해줘.
+이제 대화를 마무리해야 해. 이번 응답에서 너의 감상을 정리해주고,
+마지막 인사도 전해줘. 말투는 부드럽고 고맙다는 느낌을 담아줘.
 
 {user_name}의 감상문:
 ---
@@ -123,11 +116,10 @@ if not st.session_state.chat_disabled and uploaded_review:
 ---
 """
         elif st.session_state.last_question_flag:
-            # 마지막 질문 유도
             system_prompt = f"""
-지금은 대화가 곧 끝나가고 있는 시점이야.
-이번 질문은 마지막 질문으로 생각하고, 평소보다 한 번 더 깊게 또는 새로운 시각에서 질문을 던져줘.
-말투는 부드럽고 친근하게. {user_name}이 자연스럽게 마지막 생각을 정리할 수 있도록 도와줘.
+대화가 곧 끝나가고 있어. 이 질문은 마지막 질문이라고 생각해줘.
+지금까지 나온 이야기와 다르게 한 번 더 생각해볼 수 있는 관점이나,
+깊이 있는 질문을 던져줘. 말투는 편안하고 친근하게.
 
 {user_name}의 감상문:
 ---
@@ -135,33 +127,24 @@ if not st.session_state.chat_disabled and uploaded_review:
 ---
 """
         else:
-            # 일반 대화 프롬프트
             system_prompt = f"""
 너는 {user_name}와 함께 소설 <나, 나, 마들렌>을 읽은 동료 학습자야.
-너는 교사도 아니고 정답을 알려주는 사람도 아니야. 감상문을 읽고 인상 깊었던 부분이나 생각해볼 거리를 가볍게 이야기해줘.
-
-다음 원칙을 꼭 지켜줘:
-- 정답을 단정적으로 말하지 말고, "나는 이렇게 느꼈어", "내 생각엔" 같은 말로 표현해.
-- 감상문에서 1~2개의 문장이나 해석을 골라 너의 감상을 간단히 나눠줘.
-- 꼭 질문으로 마무리해. (예: "너는 왜 그렇게 생각했어?", "혹시 다른 장면도 인상 깊었어?")
-- 문장은 짧고 간결하게, 말투는 친구처럼 편안하게.
-- 대화를 확장하기 위해 너의 해석도 하나 정도는 함께 말해줘.
+정답을 말하지 말고, 너의 감상을 자연스럽게 말해줘.
+감상문에서 한두 문장을 골라서, 그 느낌을 공유하고 꼭 질문으로 마무리해줘.
+친구처럼 짧고 따뜻하게 말해.
 
 {user_name}의 감상문:
 ---
 {st.session_state.file_content}
 ---
 """
-
         response = get_claude_response(prompt, system_prompt)
         st.session_state.messages.append({"role": "assistant", "content": response})
         with st.chat_message("assistant"):
             st.markdown(response)
 
-        # 마지막 응답 후 대화 종료
         if st.session_state.final_prompt_mode:
             st.session_state.chat_disabled = True
-
             # 대화 로그 저장 및 전송
             chat_lines = []
             for m in st.session_state.messages:
