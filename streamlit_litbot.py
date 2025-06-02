@@ -13,7 +13,7 @@ def get_claude_response(user_input, system_prompt):
         "Content-Type": "application/json"
     }
     data = {
-        "model": "claude-3-sonnet-20240229",
+        "model": "claude-3-sonnet",  # ← ✅ 여기 수정됨
         "max_tokens": 768,
         "system": system_prompt,
         "messages": [{"role": "user", "content": user_input}]
@@ -33,7 +33,7 @@ def send_email_with_attachment(file, subject, body, filename):
     msg.set_content(body)
     file_bytes = file.read()
     msg.add_attachment(file_bytes, maintype="application", subtype="octet-stream", filename=filename)
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+    with smtpllib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
         smtp.login(st.secrets["email"]["user"], st.secrets["email"]["password"])
         smtp.send_message(msg)
 
@@ -75,7 +75,7 @@ if "last_question_flag" not in st.session_state:
 if "final_prompt_mode" not in st.session_state:
     st.session_state.final_prompt_mode = False
 
-# ✅ 첫인사 (감상문 업로드 후)
+# ✅ 첫인사
 if uploaded_review and not st.session_state.start_time:
     st.session_state.start_time = time.time()
     st.session_state.messages.append({
@@ -83,7 +83,7 @@ if uploaded_review and not st.session_state.start_time:
         "content": f"안녕, {user_name}! 감상문 잘 읽었어. 같이 <나, 나, 마들렌> 이야기 나눠볼까?"
     })
 
-# ✅ 타이머에 따라 상태 업데이트
+# ✅ 타이머 상태 갱신
 if st.session_state.start_time:
     elapsed_time = time.time() - st.session_state.start_time
     if elapsed_time > 480 and not st.session_state.last_question_flag:
@@ -96,14 +96,14 @@ for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
 
-# ✅ 채팅 입력
+# ✅ 사용자 입력
 if not st.session_state.chat_disabled and uploaded_review:
     if prompt := st.chat_input("대화를 입력하세요"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Claude 시스템 프롬프트 구성
+        # 프롬프트 선택
         if st.session_state.final_prompt_mode:
             system_prompt = f"""
 지금은 {user_name}과의 마지막 대화 시간이야.
@@ -138,6 +138,7 @@ if not st.session_state.chat_disabled and uploaded_review:
 {st.session_state.file_content}
 ---
 """
+
         response = get_claude_response(prompt, system_prompt)
         st.session_state.messages.append({"role": "assistant", "content": response})
         with st.chat_message("assistant"):
@@ -145,11 +146,7 @@ if not st.session_state.chat_disabled and uploaded_review:
 
         if st.session_state.final_prompt_mode:
             st.session_state.chat_disabled = True
-            # 대화 로그 저장 및 전송
-            chat_lines = []
-            for m in st.session_state.messages:
-                speaker = "리토" if m["role"] == "assistant" else user_name
-                chat_lines.append(f"{speaker}의 말: {m['content']}")
+            chat_lines = [f"{'리토' if m['role']=='assistant' else user_name}의 말: {m['content']}" for m in st.session_state.messages]
             chat_text = "\n".join(chat_lines)
 
             chat_file = BytesIO()
