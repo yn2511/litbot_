@@ -144,7 +144,7 @@ if st.session_state.chat_disabled:
     uploaded_reflection = st.file_uploader("📄 성찰일지 (.txt)", type=["txt"], key="reflection")
     if uploaded_reflection and "reflection_sent" not in st.session_state:
         send_email_with_attachment(uploaded_reflection, f"[성찰일지] {user_name}_성찰일지", "사용자가 업로드한 성찰일지입니다.", uploaded_reflection.name)
-        st.success("📩 성찰일지를 성공적으로 전송했어요!")
+        st.success("📩 성찰일지를 성공적으로 전송했습니다!")
         st.session_state.reflection_sent = True
 
     if uploaded_reflection and "reflection_sent" in st.session_state:
